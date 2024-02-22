@@ -55,6 +55,7 @@ export const login = async (request: Request, response: Response) => {
       where: {
         email,
       },
+      select: ["email"],
     });
 
     if (await bcrypt.compare(password, user[0].password)) {
@@ -77,6 +78,11 @@ export const login = async (request: Request, response: Response) => {
 // Função para verificar se o email existe
 export const checkEmailExists = async (req: Request, res: Response) => {
   const { email } = req.body;
+  if (!email) {
+    return res
+      .status(409)
+      .json({ type: "not-found", message: "O e-mail é obrigátorio" });
+  }
   try {
     const existingUser = await AppDataSource.getRepository(User).find({
       where: {
@@ -166,18 +172,18 @@ export const resetPassword = async (req: Request, res: Response) => {
   return res.status(200).json({ message: "Senha atualizada com sucesso" });
 };
 
-// * get all users
-export const getAllUsers = async (req: Request, res: Response) => {
-  try {
-    const users = await userRepository.find();
-    return res.status(200).json({ ok: true, users });
-  } catch (err) {
-    console.error(err);
-    return res
-      .status(500)
-      .json({ ok: false, error: "Error trying to list users. " });
-  }
-};
+// // * get all users
+// export const getAllUsers = async (req: Request, res: Response) => {
+//   try {
+//     const users = await userRepository.find();
+//     return res.status(200).json({ ok: true, users });
+//   } catch (err) {
+//     console.error(err);
+//     return res
+//       .status(500)
+//       .json({ ok: false, error: "Error trying to list users. " });
+//   }
+// };
 
 // * search user
 export const search = async (req: Request, res: Response) => {
@@ -200,7 +206,7 @@ export const updateUser = async (req: Request, res: Response) => {
   const { name, password, email } = req.body;
 
   try {
-    const user = await userRepository.findOne({ where: { name } });
+    const user = await userRepository.findOne({ where: { email } });
     if (!user) {
       return res.status(400).json({ ok: false, error: "User not found." });
     }
@@ -220,12 +226,16 @@ export const updateUser = async (req: Request, res: Response) => {
 };
 // * delete user
 export const deleteUser = async (req: Request, res: Response) => {
-  const { name } = req.body;
+  const { id } = req.params;
 
   try {
-    const user = await userRepository.findOne({ where: { name } });
+    const user = await userRepository.findOne({ where: { id: +id } });
     if (!user)
-      return res.status(404).json({ ok: false, error: "User not found." });
+      return res.status(404).json({
+        ok: false,
+        type: "not-found",
+        error: "Usuário não encontrado",
+      });
 
     await userRepository.softRemove(user);
     return res
