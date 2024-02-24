@@ -173,17 +173,32 @@ export const resetPassword = async (req: Request, res: Response) => {
 };
 
 // // * get all users
-// export const getAllUsers = async (req: Request, res: Response) => {
-//   try {
-//     const users = await userRepository.find();
-//     return res.status(200).json({ ok: true, users });
-//   } catch (err) {
-//     console.error(err);
-//     return res
-//       .status(500)
-//       .json({ ok: false, error: "Error trying to list users. " });
-//   }
-// };
+export const getAllUsers = async (req: Request, res: Response) => {
+  try {
+    const { page, limit } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
+    const take = Number(limit);
+    const users = await userRepository.findAndCount({
+      skip,
+      take,
+    });
+
+    res.status(200).json(users);
+  } catch (error) {
+    console.log("Erro ao buscar usuários:", error);
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+
+  try {
+    const users = await userRepository.find();
+    return res.status(200).json({ ok: true, users });
+  } catch (err) {
+    console.error(err);
+    return res
+      .status(500)
+      .json({ ok: false, error: "Error trying to list users. " });
+  }
+};
 
 // * search user
 export const search = async (req: Request, res: Response) => {
